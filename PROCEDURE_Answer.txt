@@ -1,0 +1,143 @@
+-- drop PROCEDURE COLUMNS_CHECK;
+delimiter //
+CREATE PROCEDURE COLUMNS_CHECK( schema_name1 varchar(100), schema_name2 varchar(100), common_table_name varchar(100)) 
+BEGIN
+DECLARE V1_TABLE_SCHEMA VARCHAR(100);DECLARE V1_TABLE_NAME VARCHAR(100);DECLARE V1_COLUMN_NAME VARCHAR(100);DECLARE V1_COLUMN_TYPE VARCHAR(100);
+DECLARE V2_TABLE_SCHEMA VARCHAR(100);DECLARE V2_TABLE_NAME VARCHAR(100);DECLARE V2_COLUMN_NAME VARCHAR(100);DECLARE V2_COLUMN_TYPE VARCHAR(100);
+DECLARE sch1 VARCHAR(100); DECLARE sch2 VARCHAR(100);
+
+DECLARE cur_schema1 CURSOR FOR 
+SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_TYPE -- INTO  V1_TABLE_SCHEMA, V1_TABLE_NAME, V1_COLUMN_NAME, V1_COLUMN_TYPE
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA  = schema_name1 -- in ('sys_schema_2','sys_schema_1') -- 'sys_schema_1' -- IN ('schema1', 'schema2')
+AND TABLE_NAME =  common_table_name
+ORDER BY TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME;
+
+DECLARE cur_schema2 CURSOR FOR
+SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_TYPE -- INTO  V2_TABLE_SCHEMA, V2_TABLE_NAME, V2_COLUMN_NAME, V2_COLUMN_TYPE
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA  = schema_name2 -- in ('sys_schema_2','sys_schema_1') -- 'sys_schema_1' -- IN ('schema1', 'schema2')
+AND TABLE_NAME = common_table_name
+ORDER BY TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME;
+
+-- Creation of temporary table --
+ /*
+ BEGIN 
+  CREATE TEMPORARY TABLE list1 (temp_TABLE_SCHEMA VARCHAR(255), temp_TABLE_NAME VARCHAR(255), temp_COLUMN_NAME VARCHAR(255), temp_COLUMN_TYPE VARCHAR(255));
+  CREATE TEMPORARY TABLE list2 (temp_TABLE_SCHEMA VARCHAR(255), temp_TABLE_NAME VARCHAR(255), temp_COLUMN_NAME VARCHAR(255), temp_COLUMN_TYPE VARCHAR(255));
+ END;
+  */
+BEGIN  
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET V1_TABLE_SCHEMA = NULL;
+-- DECLARE CONTINUE HANDLER FOR NOT FOUND SET V2_TABLE_SCHEMA = NULL;
+-- Creation of temporary table --
+CREATE TEMPORARY TABLE list1 (temp_TABLE_SCHEMA VARCHAR(255), temp_TABLE_NAME VARCHAR(255), temp_COLUMN_NAME VARCHAR(255), temp_COLUMN_TYPE VARCHAR(255));
+
+OPEN cur_schema1;
+read_loop_1: LOOP
+ FETCH cur_schema1 INTO  V1_TABLE_SCHEMA, V1_TABLE_NAME, V1_COLUMN_NAME, V1_COLUMN_TYPE ;
+ IF V1_TABLE_SCHEMA IS NULL THEN LEAVE read_loop_1; END IF;
+ -- Insertion into temporary table -- 
+ INSERT INTO list1 values ( V1_TABLE_SCHEMA, V1_TABLE_NAME, V1_COLUMN_NAME, V1_COLUMN_TYPE);
+ select V1_TABLE_SCHEMA, V1_TABLE_NAME, V1_COLUMN_NAME, V1_COLUMN_TYPE;
+ END LOOP read_loop_1;
+ CLOSE cur_schema1;
+ END;
+ 
+BEGIN -- 2nd cursor loop.
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET V2_TABLE_SCHEMA = NULL; 
+-- Creation of temporary table --
+CREATE TEMPORARY TABLE list2 (temp_TABLE_SCHEMA VARCHAR(255), temp_TABLE_NAME VARCHAR(255), temp_COLUMN_NAME VARCHAR(255), temp_COLUMN_TYPE VARCHAR(255));
+
+OPEN cur_schema2;
+read_loop_2: LOOP
+ FETCH cur_schema2 INTO  V2_TABLE_SCHEMA, V2_TABLE_NAME, V2_COLUMN_NAME, V2_COLUMN_TYPE ;
+ IF V2_TABLE_SCHEMA IS NULL THEN LEAVE read_loop_2; END IF;
+ -- Insertion into temporary table -- 
+ INSERT INTO list2 values ( V2_TABLE_SCHEMA, V2_TABLE_NAME, V2_COLUMN_NAME, V2_COLUMN_TYPE);
+ select V2_TABLE_SCHEMA, V2_TABLE_NAME, V2_COLUMN_NAME, V2_COLUMN_TYPE;
+ END LOOP read_loop_2;
+ CLOSE cur_schema2;
+END;
+-- select V1_TABLE_SCHEMA, V1_TABLE_NAME, V1_COLUMN_NAME, V1_COLUMN_TYPE, V2_TABLE_SCHEMA, V2_TABLE_NAME, V2_COLUMN_NAME, V2_COLUMN_TYPE;
+-- 
+-- /*
+BEGIN
+DECLARE i_value INT DEFAULT 0;  DECLARE v_col_only_in_sch2 varchar(100);DECLARE  v_col_only_in_sch1 varchar(100);  DECLARE v_col_in_both_sch1_sch2 varchar(100);
+DECLARE v_col_only_in_sch2_all VARCHAR(1000) DEFAULT ''; 
+DECLARE v_col_only_in_sch1_all VARCHAR(1000) DEFAULT ''; 
+DECLARE v_col_in_both_sch1_sch2_all VARCHAR(1000) DEFAULT '';
+DECLARE cur_col_only_in_sch2 CURSOR FOR
+select x.lcol2  from 
+(
+select l1.temp_column_name lcol1 ,l2.temp_column_name lcol2 from list2 l2 left join list1 l1 on l2.temp_column_name = l1.temp_column_name
+)x 
+where x.lcol1 is  null;  -- > col_only_in_sch2
+
+DECLARE cur_col_only_in_sch1 CURSOR FOR
+select x.lcol1  from 
+(
+select l1.temp_column_name lcol1 ,l2.temp_column_name lcol2 from list1 l1 left join list2 l2 on l1.temp_column_name = l2.temp_column_name
+)x 
+where x.lcol2 is  null; -- > col_only_in_sch1
+
+DECLARE cur_col_in_both_sch1_sch2 CURSOR FOR
+select l1.temp_column_name from list1 l1 join list2 l2 on l1.temp_column_name = l2.temp_column_name; -- > for common column
+
+ DECLARE CONTINUE HANDLER FOR NOT FOUND SET i_value = 1;
+ OPEN cur_col_only_in_sch2;
+  read_loop_sch2: LOOP
+   FETCH cur_col_only_in_sch2 INTO v_col_only_in_sch2;
+   IF i_value THEN SET i_value = 0; /*Reset for next cursor*/ LEAVE read_loop_sch2; END IF;
+   IF v_col_only_in_sch2_all = '' THEN
+       SET v_col_only_in_sch2_all = v_col_only_in_sch2; -- First value, no comma
+   ELSE
+   SET v_col_only_in_sch2_all = CONCAT(v_col_only_in_sch2_all,',',v_col_only_in_sch2);
+   END IF;
+  END LOOP read_loop_sch2;
+ CLOSE cur_col_only_in_sch2;	
+SELECT v_col_only_in_sch2_all;
+OPEN cur_col_only_in_sch1;
+  read_loop_sch1: LOOP
+   FETCH cur_col_only_in_sch1 INTO v_col_only_in_sch1; 
+   IF i_value THEN SET i_value = 0; /*Reset for next cursor*/ LEAVE read_loop_sch1; END IF;
+   IF v_col_only_in_sch1_all = '' THEN
+       SET v_col_only_in_sch1_all = v_col_only_in_sch1; -- First value, no comma
+   ELSE
+   SET v_col_only_in_sch1_all = CONCAT(v_col_only_in_sch1_all,',',v_col_only_in_sch1);
+   END IF;
+  END LOOP read_loop_sch1;
+ CLOSE cur_col_only_in_sch1; 
+SELECT v_col_only_in_sch1_all;
+OPEN cur_col_in_both_sch1_sch2; 
+  read_loop_both: LOOP
+   FETCH cur_col_in_both_sch1_sch2 INTO v_col_in_both_sch1_sch2; 
+   IF i_value THEN SET i_value = 0; /*Reset for next cursor*/ LEAVE read_loop_both; END IF;
+   IF v_col_in_both_sch1_sch2_all = '' THEN
+       SET v_col_in_both_sch1_sch2_all = v_col_in_both_sch1_sch2; -- First value, no comma
+   ELSE
+   SET v_col_in_both_sch1_sch2_all = CONCAT(v_col_in_both_sch1_sch2_all,',',v_col_in_both_sch1_sch2);
+   END IF;
+  END LOOP read_loop_both;
+ CLOSE cur_col_in_both_sch1_sch2; 
+SELECT v_col_in_both_sch1_sch2_all;
+-- */
+select 123;
+select schema_name1,schema_name2, common_table_name, v_col_in_both_sch1_sch2_all;
+
+SELECT CONCAT(
+    'SCHEMA_COMPARISION: ', schema_name1, ' VS ', schema_name2,
+    ' TABLE: ', common_table_name,
+    ' COLUMNS ONLY IN SCH2: ', v_col_only_in_sch2_all,
+    ' COLUMNS ONLY IN SCH1: ', v_col_only_in_sch1_all,
+    ' COLUMNS IN BOTH: ', v_col_in_both_sch1_sch2_all
+) AS comparison_result;
+END;
+  DROP TABLE list1;
+  DROP TABLE list2;
+
+END;
+
+
+end //
+delimiter ;

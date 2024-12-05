@@ -1,0 +1,13 @@
+USE  sys;
+ create database sys_schema_1;
+ create database sys_schema_2;
+
+use sys_schema_1;
+create table tab1 ( col1_schema1 int, col2_schema1 varchar(50), col3_schema1 int, col4_schema1 varchar(100));
+create table tab2 ( col1tab2_schema1 varchar(80), col2tab2_schema1 varchar(50), col3tab2_schema1 int, col4tab2_schema1 int);
+create table tab3(id int);
+
+use sys_schema_2;
+create table tab1 ( col1_schema2 int, col2_schema2 varchar(50), col3_schema2 int, col4_schema2 varchar(100), col5_schema2 int) ;
+create table tab2 ( col1tab2_schema1 int, col2tab2_schema1 int, col5tab2_schema1 int); 
+create table tab3(id int);

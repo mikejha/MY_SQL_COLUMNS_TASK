@@ -1,0 +1,36 @@
+1st Validation:
+
+Run below:
+call COLUMNS_CHECK('sys_schema_1','sys_schema_2','tab1'); 
+
+Output should be:
+'SCHEMA_COMPARISION: sys_schema_1 VS sys_schema_2 
+TABLE: tab1 
+COLUMNS ONLY IN SCH2: col1_schema2,col2_schema2,col3_schema2,col4_schema2,col5_schema2 
+COLUMNS ONLY IN SCH1: col1_schema1,col2_schema1,col3_schema1,col4_schema1 
+COLUMNS IN BOTH: '
+
+2nd Validation:
+
+Run below:
+call COLUMNS_CHECK('sys_schema_1','sys_schema_2','tab2'); 
+
+Output should be:
+'SCHEMA_COMPARISION: sys_schema_1 VS sys_schema_2 
+TABLE: tab2 
+COLUMNS ONLY IN SCH2:  
+COLUMNS ONLY IN SCH1: col4tab2_schema1 
+COLUMNS IN BOTH: col1tab2_schema1,col2tab2_schema1,col3tab2_schema1'
+
+3rd Validation:
+
+Run below:
+call COLUMNS_CHECK('sys_schema_1','sys_schema_2','tab3'); 
+
+Output should be:
+'SCHEMA_COMPARISION: sys_schema_1 VS sys_schema_2 
+TABLE: tab3 
+COLUMNS ONLY IN SCH2:  
+COLUMNS ONLY IN SCH1:  
+COLUMNS IN BOTH: id'
+

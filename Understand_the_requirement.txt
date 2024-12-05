@@ -1,0 +1,15 @@
+You need to compare the columns of the common table present in two different schemas of My_sql workbench DB.
+
+So, 2 schmeas are there 'sys_schema_1' and 'sys_schema_2' having 3 common tables 'tab1', 'tab2' and 'tab3' having different/similar columns.
+You need to find that for a particular table, which is column is not present in 'sys_schema_1' and 'sys_schema_2'.
+
+Run/Open the text in below order to start the challange:
+
+Opening order of scripts:
+
+1. Script1: contains all the table and scehma creation scripts.
+
+2. PROCEDURE_Answer: Procedure which is performing the task.(Try creating proc yourself, if not,then open this).
+
+3. Result_validation_answer: Once procedure is created, then just run the 3 cases present in this file and validate your answer.
+
